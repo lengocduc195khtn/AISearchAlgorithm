@@ -13,6 +13,76 @@ def heuristic_bonus_point(win, draw, grid, start: Spot, exit: Spot, matrix, H, b
     currentPoint=Spot(bonus_point[1], bonus_point[0], exit.width, exit.row,exit.col)
     return H(start, currentPoint) + H(currentPoint,exit) + bonus_point[2]
 
+def GBFS_bunus_point(win, draw, grid, start: Spot, exit: Spot,matrix, H, bonus_points):
+    priorQ = PriorityQueue()
+    priorQ.put((0, (start, [start])))
+    visited = []
+    count = 0
+    
+    while not priorQ.empty():
+        
+        # Lấy thông tin điểm có độ ưu tiên cao nhất ra khỏi hàng đợi
+        # Điểm này là điểm hàng xóm kế tiếp có đánh giá là cho con đường đi ngắn nhất trong tất
+        # cả các hàng xóm
+        _ , (currentVertex, path) = priorQ.get()
+        
+        # Nếu đã tìm đến điểm kết thúc thì dừng tìm kiếm và chuyển sang bước in đường đi
+        if(currentVertex == exit):
+            break
+        
+        currentVertex.make_closed()
+
+        bonus = 0
+        for neig in currentVertex.neighbours:
+            j = 0
+            n = len(bonus_points)
+            while(j < n):
+                if(currentVertex.x/currentVertex.width == bonus_points[j][0] and currentVertex.y/currentVertex.width == bonus_points[j][1]):
+                    bonus = bonus + bonus_points[j][2]
+                    bonus_points.remove(bonus_points[j])
+                    j = j - 1
+                    n = n - 1
+                j = j + 1
+
+            # Tính hàm f(x) = h(x) cho biết độ dài đường đi dự đoán nếu ta tiếp tục đi từ điểm hiện tại đến đích
+            heuristicCost =  H(neig,exit)
+ 
+            # Xét khoảng cách từ điểm hàng xóm đang xét đến các điểm cộng
+            # Tìm con đường được dự đoán là ngắn nhất như sau:
+            
+            # Tính hàm h(x_0, exit) = h(x_0, x_bonus) + h(x_bonus, exit) cho biết tổng độ dài khi lựa chọn đi qua điểm thưởng
+            # Sau đó kiểm tra chi phí đến điểm nào là tối ưu nhất và đưa dần chúng vào hàng đợi ưu tiên với thứ tự ưu tiên giảm dần 
+            # theo dự đoán (thêm cả điểm đích vào hàm đợi ưu tiên đó).
+
+            for j in range(0,len(bonus_points)):
+                heuristicCurrentCost = heuristic_bonus_point(win, draw, grid, neig , exit, matrix, H, bonus_points[j])
+
+                # Nếu tìm ra đường đi được dự đoán tốt hơn đi thẳng đến đích thì gán nó là đường đi ưu tiên
+                # Sau bước này, ta sẽ tìm ra đường đi được dự đoán là tốt nhất
+                if(heuristicCurrentCost < heuristicCost):
+                    heuristicCost = heuristicCurrentCost
+
+ 
+            # Nếu điểm hàng xóm đang xét chưa đi qua, hoặc chi phí mới để đạt đến điểm hiện tại nhỏ hơn chi phí
+            # đã tính trước đây thì thực hiện cập nhật chi phí mới
+            if neig not in visited:
+                neig.make_open()
+                newCost = 0
+                
+                priority = 0 + heuristicCost
+
+                priorQ.put( (priority, (neig, path + [neig] )))
+                visited.append(neig)
+
+            draw()
+            pygame.image.save(win, "tmp_image/" + str(count) + ".png")
+            count+=1
+
+
+    if not priorQ.empty():
+        reconstruct_path(win, path, draw)
+    return []
+
 def Astar_bunus_point(win, draw, grid, start: Spot, exit: Spot, matrix, H, bonus_points):
     priorQ = PriorityQueue()
     priorQ.put((0, (start, [start])))

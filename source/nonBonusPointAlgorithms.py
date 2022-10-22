@@ -86,9 +86,55 @@ def UCS(win, draw, grid, start: Spot, exit: Spot, weigh = None):
         return True
     return False
 
-def GBFS(win, draw, grid, start: Spot, exit: Spot):
-    return 1
+def GBFS(win, draw, grid, start: Spot, exit: Spot, H):
+    priorQ = PriorityQueue()
+    priorQ.put((0, (start, [start])))
+    visited = []
 
+    currentVertex = start
+
+    count = 0
+    while not priorQ.empty():
+        _, (currentVertex, path) = priorQ.get()
+        # Nếu điểm đang xác là điểm kết thúc thì dừng
+        if(currentVertex == exit):
+            break
+        
+        # Thực hiện đánh đáu điểm đang xét là 'đã đi qua'
+        currentVertex.make_closed()
+        
+        # Xét các hàng xóm của điểm đang xét
+        for neig in currentVertex.neighbours:
+            # Tính độ dài đường di đến điểm hàng xóm
+            newCost = 1
+            
+            # Nếu điểm hàng xóm đã được đi qua hoặc tìm ra con đường ngắn hơn đi đến điểm hàng xóm
+            # Thì thực hiện mở các ô cạnh nó
+            if neig not in visited:
+                neig.make_open()
+                
+                # Tính hàm đánh giá dựa trên độ dài đã đi qua ở hiện tại cộng với độ dài đường
+                # đi dự đoán đến điểm đích.
+                priority = newCost + H(neig,exit)
+                
+                # Đưa điểm đang hàng xóm đang xét, đường đi cùng độ dài quãng được đánh giá vào
+                # hàng đợi ưu tiên
+                priorQ.put( (priority, (neig, path + [neig] )))
+                
+                # Thêm hàng xóm vào tập các điểm đã đi qua.
+                visited.append(neig)
+                #sleep(0.5)
+            draw()
+            count+=1
+        pygame.image.save(win, "tmp_image/" + str(count) + ".png")
+                
+
+
+
+    if not priorQ.empty() or currentVertex == exit:
+        reconstruct_path(win, path, draw)
+        return True
+    return False
 
 def Astar(win, draw, grid, start: Spot, exit: Spot, matrix, H):
     priorQ = PriorityQueue()
